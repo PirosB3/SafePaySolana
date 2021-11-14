@@ -376,6 +376,7 @@ pub struct CompleteGrant<'info> {
     wallet_to_deposit_to: Account<'info, TokenAccount>,   // Bob's USDC wallet (will be initialized if it did not exist)
 
     // Users and accounts in the system
+    #[account(mut)]
     user_sending: AccountInfo<'info>,                     // Alice
     #[account(mut)]
     user_receiving: Signer<'info>,                        // Bob
