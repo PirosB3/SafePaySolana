@@ -129,11 +129,6 @@ pub mod safe_pay {
     }
 
     pub fn pull_back(ctx: Context<PullBackInstruction>, application_idx: u64, state_bump: u8, _wallet_bump: u8) -> ProgramResult {
-        if ctx.accounts.refund_wallet.owner != ctx.accounts.user_sending.key() {
-            msg!("Unauthorized user");
-            return Err(ErrorCode::WalletToWithdrawFromInvalid.into());
-        }
-
         let current_stage = Stage::from(ctx.accounts.application_state.stage)?;
         let is_valid_stage = current_stage == Stage::FundsDeposited || current_stage == Stage::PullBackComplete;
         if !is_valid_stage {
@@ -141,6 +136,7 @@ pub mod safe_pay {
             return Err(ErrorCode::StageInvalid.into());
         }
 
+        let wallet_amount = ctx.accounts.escrow_wallet_state.amount;
         transfer_escrow_out(
             ctx.accounts.user_sending.to_account_info(),
             ctx.accounts.user_receiving.to_account_info(),
@@ -151,7 +147,7 @@ pub mod safe_pay {
             state_bump,
             ctx.accounts.token_program.to_account_info(),
             ctx.accounts.refund_wallet.to_account_info(),
-            ctx.accounts.refund_wallet.amount,
+            wallet_amount,
         )?;
         let state = &mut ctx.accounts.application_state;
         state.stage = Stage::PullBackComplete.to_code();
@@ -251,7 +247,7 @@ pub struct Initialize<'info> {
 //
 #[derive(Clone, Copy, PartialEq)]
 pub enum Stage {
-    // {from Initialized} Safe Pay withdrew funds from Alice and deposited them into the escro wallet
+    // Safe Pay withdrew funds from Alice and deposited them into the escrow wallet
     FundsDeposited,
 
     // {from FundsDeposited} Bob withdrew the funds from the escrow. We are done.
@@ -333,6 +329,7 @@ pub struct InitializeNewGrant<'info> {
     escrow_wallet_state: Account<'info, TokenAccount>,
 
     // Users and accounts in the system
+    #[account(mut)]
     user_sending: Signer<'info>,                     // Alice
     user_receiving: AccountInfo<'info>,              // Bob
     mint_of_token_being_sent: Account<'info, Mint>,  // USDC
@@ -421,6 +418,10 @@ pub struct PullBackInstruction<'info> {
     rent: Sysvar<'info, Rent>,
 
     // Wallet to deposit to
-    #[account(mut)]
+    #[account(
+        mut,
+        constraint=refund_wallet.owner == user_sending.key(),
+        constraint=refund_wallet.mint == mint_of_token_being_sent.key()
+    )]
     refund_wallet: Account<'info, TokenAccount>,
 }
