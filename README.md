@@ -1,6 +1,6 @@
 ## Safe Pay Tutorial
 
-This repository contains the source code for my blog post [Using PDAs and SPL Token in Anchor](https://medium.com/@pirosb3/using-pdas-and-spl-token-in-anchor-df05c57ccd04). The code contains the following:
+This repository contains the source code for my blog post [Using PDAs and SPL Token in Anchor](https://medium.com/@pirosb3/using-pdas-and-spl-token-in-anchor). The code contains the following:
 
 - Solana program code to initialize a new payment, complete a payment, pull back a payment
 - Unit tests for golden path scenarios
